@@ -1,0 +1,19 @@
+const page=document.body.dataset.page;const q=(s)=>document.querySelector(s);const qa=(s)=>[...document.querySelectorAll(s)];
+const state={projects:[],filtered:[],tag:'All'};
+
+async function load(){const r=await fetch('./content/projects.json');const j=await r.json();state.projects=j.projects||[];state.filtered=state.projects;initTheme();initCursor();if(page==='home')home();if(page==='work')work();if(page==='project')project();if(page==='contact')contact();}
+
+function tile(p){return `<a class="tile" href="./project.html?slug=${encodeURIComponent(p.slug)}"><img loading="lazy" src="${p.cover}" alt="${p.title}"><div class="meta">${p.title} · ${(p.tags||[]).join(', ')} · ${p.year||''}</div></a>`}
+function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+function home(){q('#featuredGrid').innerHTML=shuffle(state.projects).slice(0,10).map(tile).join('')}
+
+function renderWork(){const g=q('#workGrid');g.innerHTML=state.filtered.map(tile).join('')}
+function setMode(m){const g=q('#workGrid');g.classList.remove('masonry','rows','sheet');g.classList.add(m)}
+function work(){const tags=['All',...new Set(state.projects.flatMap(p=>p.tags||[]))];q('#filters').innerHTML=tags.map(t=>`<button class="ghost ${t==='All'?'on':''}" data-tag="${t}">${t}</button>`).join('');q('#filters').onclick=(e)=>{const b=e.target.closest('button[data-tag]');if(!b)return;state.tag=b.dataset.tag;qa('#filters button').forEach(x=>x.classList.remove('on'));b.classList.add('on');state.filtered=state.tag==='All'?state.projects:state.projects.filter(p=>(p.tags||[]).includes(state.tag));renderWork()};q('#modeMasonry').onclick=()=>setMode('masonry');q('#modeRows').onclick=()=>setMode('rows');q('#modeSheet').onclick=()=>setMode('sheet');setMode('masonry');renderWork();window.addEventListener('scroll',()=>{q('#toTop').style.display=window.scrollY>400?'block':'none'});q('#toTop').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});}
+
+function project(){const slug=new URLSearchParams(location.search).get('slug');const i=state.projects.findIndex(p=>p.slug===slug);const p=state.projects[i]||state.projects[0];if(!p)return;const next=state.projects[(i+1)%state.projects.length];q('#projectWrap').innerHTML=`<section class="project-hero"><h1>${p.title}</h1><p>${p.description||''}</p><img src="${p.cover}" alt="${p.title}"></section><section class="project-meta"><div><strong>Role</strong><div>${p.role||''}</div></div><div><strong>Tools</strong><div>${(p.tools||[]).join(', ')}</div></div><div><strong>Year</strong><div>${p.year||''}</div></div><div><strong>Client</strong><div>${p.client||''}</div></div></section><section class="project-grid">${(p.images||[]).map(s=>`<img loading="lazy" src="${s}" alt="${p.title}">`).join('')}</section><p style="margin:20px 0"><a class="btn" href="${p.sourceUrl}" target="_blank">Open on Behance</a> <a class="btn" href="./project.html?slug=${next.slug}">Next Project →</a></p>`;window.addEventListener('keydown',(e)=>{if(e.key==='ArrowRight')location.href=`./project.html?slug=${next.slug}`;if(e.key==='ArrowLeft')history.back()});}
+
+function contact(){const b=q('#copyEmail');if(b)b.onclick=()=>{navigator.clipboard.writeText(b.textContent.trim());b.textContent='Copied ✓';setTimeout(()=>b.textContent='florentinabunjaku@gmail.com',1200)}}
+function initTheme(){const t=localStorage.getItem('cvtina-theme');if(t==='light')document.body.classList.add('light');const btn=q('#themeToggle');if(btn)btn.onclick=()=>{document.body.classList.toggle('light');localStorage.setItem('cvtina-theme',document.body.classList.contains('light')?'light':'dark')}}
+function initCursor(){const c=q('.cursor');if(!c)return;window.addEventListener('pointermove',e=>{c.style.left=e.clientX+'px';c.style.top=e.clientY+'px'})}
+load();
